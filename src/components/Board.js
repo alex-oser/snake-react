@@ -1,159 +1,144 @@
 import React, { useRef, useState, useEffect } from "react";
 
-export default function Board({ rows, cols, runState, resetState }) {
-  // Locations are going to be 1-based since that is how CSS grid works
-  const [ bodyCoord, _setBodyCoord ] = useState(
-    [
-      {
-        x: Math.floor(rows / 2),
-        y: Math.floor(cols / 2)
-      }
-    ]
-  )
-  const bodyCoordRef = useRef(bodyCoord)
-  const setBodyCoord = data => {
-    bodyCoordRef.current = data;
-    _setBodyCoord(data);
-  };
-  const [ snakeBody, setSnakeBody ] = useState()
-  const [ length, _setLength ] = useState(3)
-  const lengthRef = useRef(length)
-  const setLength = data => {
-    lengthRef.current = data;
-    _setLength(data);
-  };
-  const [ direction, _setDirection ] = useState("left")
-  const directionRef = useRef(direction);
-  const setDirection = data => {
-    directionRef.current = data;
-    _setDirection(data);
-  };
-  const [ timer, setTimer ] = useState(null)
-  const [ running, setRunning ] = useState(runState)
-  const [ reset, setReset ] = useState(false)
-  const [ apple, _setApple ] = useState({'x': null, 'y': null})
-  const appleRef = useRef(apple)
-  const setApple = data => {
-    appleRef.current = data;
-    _setApple(data);
-  }
+// Code for this function taken from https://overreacted.io/making-setinterval-declarative-with-react-hooks/
+function useInterval(callback, delay) {
+  const savedCallback = useRef();
 
-  const gridStyle = {
+  useEffect(() => {
+    savedCallback.current = callback;
+  });
+
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if ( delay !== null ) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
+
+export default function Board({ rows, cols, runState, resetState, callbackFromParent }) {
+  // Locations are going to be 1-based since that is how CSS grid works
+  const [ bodyCoord, setBodyCoord ] = useState(
+    [{
+      x: Math.floor(rows / 2),
+      y: Math.floor(cols / 2)
+    }]
+  )
+  const [ length, setLength ] = useState(3)
+  const [ direction, setDirection ] = useState(null)
+  const [ apple, setApple ] = useState({'x': null, 'y': null})
+  const [ gridStyle, setGridStyle ] = useState({
     display: "grid",
     gridTemplateColumns: `repeat(${rows}, 10px)`,
     gridTemplateRows: `repeat(${cols}, 10px)`,
     height: "100%",
     width: "100%",
     backgroundColor: "yellow"
-  }
+  })
 
   useEffect(() => {
-    resetBoard()
+    setBodyCoord([{ x: Math.floor(rows / 2), y: Math.floor(cols / 2) }])
+    setLength(3)
+    setApple(findApple(apple))
+    setGridStyle({
+      display: "grid",
+      gridTemplateColumns: `repeat(${rows}, 10px)`,
+      gridTemplateRows: `repeat(${cols}, 10px)`,
+      height: "100%",
+      width: "100%",
+      backgroundColor: "yellow"
+    })
   }, [rows, cols])
 
   useEffect(() => {
-    if (reset) {
-      console.log(`reset button hit, resetting`)
-      resetBoard()
+    console.log("Board detected a reset")
+    setBodyCoord( (resetState) ? [{ x: Math.floor(rows / 2), y: Math.floor(cols / 2) }] : bodyCoord )
+    setLength( (resetState) ? 3 : length )
+    setApple( (resetState) ? findApple(apple) : apple )
+    if ( resetState ) {
+      console.log("I am telling app to set resetState to false")
+      callbackFromParent({'resetState': false})
     }
-  }, [reset])
+  }, [ resetState ])
 
   useEffect(() => {
-    setReset(resetState)
-  }, [resetState])
-
-  useEffect(() => {
-    setSnakeBody(bodyCoord.map((loc) =>
-      <div style={{
-        gridColumn: `${loc.x}`,
-        gridRow: `${loc.y}`,
-        backgroundColor: "green"
-      }}></div>
-    ))
-  }, [bodyCoord])
-
-  useEffect(() => {
-    console.log("board detected a change to runstate")
-    console.log(`board is running: ${running}`)
-    if ( running ) {
-      const gameTimer = setInterval(() => {
-        moveSnake()
-      }, 75); 
-      setTimer(gameTimer)
-    } else {
-      clearInterval(timer)
-    }
-  }, [running])
-
-  useEffect(() => {
-    setRunning(runState)
-  }, [runState])
-
-  useEffect(() => {
-    window.addEventListener("keydown", getDirection);
-    findApple()
+    setApple(findApple(apple))
   }, [])
 
-  const resetBoard = () => {
-    setBodyCoord([{ x: Math.floor(rows / 2), y: Math.floor(cols / 2) }])
-    findApple()
-    setLength(3)
-  }
+  useEffect(() => {
+    console.log(`Board: Game state is rows=${rows} cols=${cols} runState=${runState} resetState=${resetState}`)  
+    window.addEventListener("keydown", getDirection);
+    return () => window.removeEventListener("keydown", getDirection);
+  })
 
-  const findApple = () => {
+  useInterval(() => {
+    moveSnake();
+  }, runState ? 150 : null);
+
+  const findApple = (currApple) => {
     let foundApple = false
+    let newApple = {}
     while (! foundApple) {
       const appleX = Math.ceil(Math.random()*rows)
       const appleY = Math.ceil(Math.random()*cols)
-      const overlap = bodyCoordRef.current.filter(coord => coord.x === appleX && coord.y === appleY)
+      const overlap = bodyCoord.filter(coord => coord.x === appleX && coord.y === appleY)
       if (overlap.length === 0) {
-        console.log(`old apple at [${apple.x}, ${apple.y}]`)
-        setApple({'x': appleX, 'y': appleY})
+        console.log(`old apple at [${currApple.x}, ${currApple.y}]`)
         console.log(`set new apple at [${appleX}, ${appleY}]`)
+        newApple = { x: appleX, y: appleY }
         foundApple = true
       }
     }
+    return newApple
   }
 
   // Returns a new array for the body coordinates with next location added and last removed if the snake is too long
   const moveSnake = () => {
     const next = {}
-    switch (directionRef.current){
+    switch (direction){
       case "left":
-        next.x = bodyCoordRef.current[0].x - 1
-        next.y = bodyCoordRef.current[0].y
+        next.x = bodyCoord[0].x - 1
+        next.y = bodyCoord[0].y
         break;
       case "up":
-        next.x = bodyCoordRef.current[0].x
-        next.y = bodyCoordRef.current[0].y - 1
+        next.x = bodyCoord[0].x
+        next.y = bodyCoord[0].y - 1
         break;
       case "right":
-        next.x = bodyCoordRef.current[0].x + 1
-        next.y = bodyCoordRef.current[0].y
+        next.x = bodyCoord[0].x + 1
+        next.y = bodyCoord[0].y
         break;
       case "down":
-        next.x = bodyCoordRef.current[0].x 
-        next.y = bodyCoordRef.current[0].y + 1
+        next.x = bodyCoord[0].x 
+        next.y = bodyCoord[0].y + 1
+        break;
+      // Move left by default
+      default:
+        next.x = bodyCoord[0].x - 1
+        next.y = bodyCoord[0].y
     }
     if (gameOver(next)) {
-      setRunning(false)
+      callbackFromParent({'runState':false})
       return
     }
-    if (next.x === appleRef.current.x && next.y === appleRef.current.y) {
+    if (next.x === apple.x && next.y === apple.y) {
       console.log('snake found the apple!')
-      setLength(lengthRef.current + 3)
-      findApple()
+      setLength(length + 3)
+      setApple(findApple(apple))
     }
-    const newCoords = bodyCoordRef.current.slice();
+    const newCoords = bodyCoord.slice();
     newCoords.unshift(next);
-    if (newCoords.length > lengthRef.current) {
+    if (newCoords.length > length) {
       newCoords.pop()
     }
     setBodyCoord(newCoords);
   }
 
   const gameOver = (next) => {
-    const overlap = bodyCoordRef.current.filter(coord => coord.x === next.x && coord.y === next.y)
+    const overlap = bodyCoord.filter(coord => coord.x === next.x && coord.y === next.y)
     if (overlap.length > 0) {
       console.log(`Snake hit itself at [${next.x}, ${next.y}]`)
       return true
@@ -168,37 +153,58 @@ export default function Board({ rows, cols, runState, resetState }) {
   const getDirection = (event) => {
     switch (event.keyCode) {
       case 37:
-        if ( directionRef.current !== "left" && directionRef.current !== "right" ) {
+        if ( direction !== "left" && direction !== "right" ) {
           setDirection("left");
         }
         break;
       case 38:
-        if ( directionRef.current !== "up" && directionRef.current !== "down" ) {
+        if ( direction !== "up" && direction !== "down" ) {
           setDirection("up");
         }
         break;
       case 39:
-        if ( directionRef.current !== "left" && directionRef.current !== "right" ) {
+        if ( direction !== "left" && direction !== "right" ) {
           setDirection("right");
         }
         break;
       case 40:
-        if ( directionRef.current !== "up" && directionRef.current !== "down" ) {
+        if ( direction !== "up" && direction !== "down" ) {
           setDirection("down");
         }
+        break;
+      default:
+        return
     }
+  }
+
+  const getKey = (coord) => {
+    return `loc_${coord.x}_${coord.y}`
   }
 
   return (
     <div className="board-panel">
       <div style={gridStyle}>
         <label>Score: {length}</label>
-        {snakeBody}
-        <div style={{
+        {/* Set boxes for snake body to green */}
+        {bodyCoord.map((coord) =>
+          <div 
+            key={getKey(coord)} 
+            style={{
+              gridColumn: `${coord.x}`,
+              gridRow: `${coord.y}`,
+              backgroundColor: "green"
+            }}>
+          </div>
+        )}
+        {/* Set box for apple to red */}
+        <div 
+          key="apple"
+          style={{
             gridColumn: `${apple.x}`,
             gridRow: `${apple.y}`,
             backgroundColor: "red"
-          }}></div>
+          }}>
+        </div>
       </div>
     </div>
   );

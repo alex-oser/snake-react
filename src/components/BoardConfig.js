@@ -1,24 +1,22 @@
-import React, { useEffect, useState }  from 'react';
+import React from 'react';
 import Typography from '@material-ui/core/Typography';
 import Slider from '@material-ui/core/Slider';
 
-export default function BoardConfig( { callbackFromParent } ) {
-  const [ cols, setCols ] = useState(35)
-  const [ rows, setRows ] = useState(35)
+export default function BoardConfig( { cols, rows, callbackFromParent } ) {
 
   const rowsText = (value) => {
-    setRows(value)
+    if (value !== rows) {
+      callbackFromParent({'rows': value, 'runState': false})
+    }
     return `${value}°C`
   }
 
   const colsText = (value) => {
-    setCols(value)
+    if (value !== cols) {
+      callbackFromParent({'cols': value, 'runState': false})
+    }
     return `${value}°C`
   }
-
-  useEffect(() => {
-    callbackFromParent(rows, cols)
-  }, [rows, cols])
 
   const sliderHeight = '300px'
 
@@ -29,7 +27,7 @@ export default function BoardConfig( { callbackFromParent } ) {
           {cols} Cols
         </Typography>
         <Slider
-          defaultValue={35}
+          defaultValue={20}
           orientation="vertical"
           getAriaValueText={colsText}
           aria-labelledby="discrete-slider"
@@ -45,7 +43,7 @@ export default function BoardConfig( { callbackFromParent } ) {
           {rows} Rows
         </Typography>
         <Slider
-          defaultValue={35}
+          defaultValue={20}
           orientation="vertical"
           getAriaValueText={rowsText}
           aria-labelledby="discrete-slider"
