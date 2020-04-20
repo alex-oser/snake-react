@@ -21,10 +21,15 @@ function useInterval(callback, delay) {
 
 export default function Board({ rows, cols, runState, resetState, callbackFromParent }) {
   // Locations are going to be 1-based since that is how CSS grid works
+  const snakeBodyColor = "pink"
+  const snakeHeadColor = "purple"
+  const appleColor = "green"
+  const gameOverColor = "red"
   const [ bodyCoord, setBodyCoord ] = useState(
     [{
       x: Math.floor(rows / 2),
-      y: Math.floor(cols / 2)
+      y: Math.floor(cols / 2),
+      color: snakeHeadColor
     }]
   )
   const [ length, setLength ] = useState(3)
@@ -40,7 +45,7 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
   })
 
   useEffect(() => {
-    setBodyCoord([{ x: Math.floor(rows / 2), y: Math.floor(cols / 2) }])
+    setBodyCoord([{ x: Math.floor(rows / 2), y: Math.floor(cols / 2), color: snakeHeadColor }])
     setLength(3)
     setApple(findApple(apple))
     setGridStyle({
@@ -55,7 +60,7 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
 
   useEffect(() => {
     console.log("Board detected a reset")
-    setBodyCoord( (resetState) ? [{ x: Math.floor(rows / 2), y: Math.floor(cols / 2) }] : bodyCoord )
+    setBodyCoord( (resetState) ? [{ x: Math.floor(rows / 2), y: Math.floor(cols / 2), color: snakeHeadColor }] : bodyCoord )
     setLength( (resetState) ? 3 : length )
     setApple( (resetState) ? findApple(apple) : apple )
     if ( resetState ) {
@@ -120,17 +125,26 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
         next.x = bodyCoord[0].x - 1
         next.y = bodyCoord[0].y
     }
+    next.color = snakeHeadColor
+    // If next move is game over
     if (gameOver(next)) {
+      const newCoords = bodyCoord.slice();
+      newCoords[0].color = gameOverColor
+      setBodyCoord(newCoords)
       callbackFromParent({'runState':false})
       return
-    }
+    } 
+    // If snake eats apple on next move
     if (next.x === apple.x && next.y === apple.y) {
       console.log('snake found the apple!')
       setLength(length + 3)
       setApple(findApple(apple))
     }
+    // Next move is valid, prepend head to snake body
     const newCoords = bodyCoord.slice();
+    newCoords[0].color = snakeBodyColor
     newCoords.unshift(next);
+    newCoords[0].color = snakeHeadColor
     if (newCoords.length > length) {
       newCoords.pop()
     }
@@ -192,7 +206,7 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
             style={{
               gridColumn: `${coord.x}`,
               gridRow: `${coord.y}`,
-              backgroundColor: "green"
+              backgroundColor: `${coord.color}`
             }}>
           </div>
         )}
@@ -202,7 +216,7 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
           style={{
             gridColumn: `${apple.x}`,
             gridRow: `${apple.y}`,
-            backgroundColor: "red"
+            backgroundColor: appleColor
           }}>
         </div>
       </div>
