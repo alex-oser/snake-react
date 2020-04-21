@@ -18,7 +18,10 @@ export default function BoardConfig( { cols, rows, callbackFromParent } ) {
     return `${value}°C`
   }
 
-  const sliderHeight = '300px'
+  const defaultRows = 10
+  const defaultCols = 10
+
+  const sliderHeight = '150px'
 
   return (
     <div className="board-config"> 
@@ -27,14 +30,14 @@ export default function BoardConfig( { cols, rows, callbackFromParent } ) {
           {cols} Cols
         </Typography>
         <Slider
-          defaultValue={20}
+          defaultValue={defaultRows}
           orientation="vertical"
           getAriaValueText={colsText}
           aria-labelledby="discrete-slider"
           valueLabelDisplay="auto"
           step={5}
           marks
-          min={20}
+          min={10}
           max={50}
         />
       </div>
@@ -43,14 +46,14 @@ export default function BoardConfig( { cols, rows, callbackFromParent } ) {
           {rows} Rows
         </Typography>
         <Slider
-          defaultValue={20}
+          defaultValue={defaultCols}
           orientation="vertical"
           getAriaValueText={rowsText}
           aria-labelledby="discrete-slider"
           valueLabelDisplay="auto"
           step={5}
           marks
-          min={20}
+          min={10}
           max={50}
         />
       </div>

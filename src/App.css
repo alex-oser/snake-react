@@ -1,7 +1,7 @@
 .App {
   display: grid;
-  grid-template-columns: 1fr 4fr 1fr;
-  grid-template-rows: 1fr 4fr 1fr;
+  grid-template-columns: 1fr 6fr 1fr;
+  grid-template-rows: 1fr 6fr 1fr;
   grid-gap: 10px 10px;
   background-color: #282c34;
   height: 100vh;
@@ -9,12 +9,14 @@
 }
 
 .board-panel {
-  background-color: aqua;
-  display:grid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: mediumseagreen;
   grid-row: 2 / 3;
   grid-column: 2 / 3;
-  justify-content: center;
-  align-content: center;
+  height: 100%;
+  width: 100%;
 }
 
 .board-config {

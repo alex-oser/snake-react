@@ -35,14 +35,7 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
   const [ length, setLength ] = useState(3)
   const [ direction, setDirection ] = useState(null)
   const [ apple, setApple ] = useState({'x': null, 'y': null})
-  const [ gridStyle, setGridStyle ] = useState({
-    display: "grid",
-    gridTemplateColumns: `repeat(${rows}, 10px)`,
-    gridTemplateRows: `repeat(${cols}, 10px)`,
-    height: "100%",
-    width: "100%",
-    backgroundColor: "yellow"
-  })
+  const [ gridStyle, setGridStyle ] = useState({})
 
   useEffect(() => {
     setBodyCoord([{ x: Math.floor(rows / 2), y: Math.floor(cols / 2), color: snakeHeadColor }])
@@ -50,10 +43,13 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
     setApple(findApple(apple))
     setGridStyle({
       display: "grid",
-      gridTemplateColumns: `repeat(${rows}, 10px)`,
-      gridTemplateRows: `repeat(${cols}, 10px)`,
-      height: "100%",
-      width: "100%",
+      gridTemplateColumns: `repeat( ${cols}, minmax(auto, min( calc(75vh / ${rows}), calc(75vw / ${cols}) ) ))`,
+      gridTemplateRows: `repeat( ${rows}, minmax(auto, min( calc(75vh / ${rows}), calc(75vw / ${cols}) ) ))`,
+      gridGap: "1px 1px",
+      height: `auto`,
+      width: `auto`,
+      // alignContent: "center",
+      // justifyContent: "center",
       backgroundColor: "yellow"
     })
   }, [rows, cols])
@@ -105,24 +101,24 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
     const next = {}
     switch (direction){
       case "left":
-        next.x = bodyCoord[0].x - 1
-        next.y = bodyCoord[0].y
-        break;
-      case "up":
         next.x = bodyCoord[0].x
         next.y = bodyCoord[0].y - 1
         break;
+      case "up":
+        next.x = bodyCoord[0].x - 1
+        next.y = bodyCoord[0].y
+        break;
       case "right":
+        next.x = bodyCoord[0].x
+        next.y = bodyCoord[0].y + 1
+        break;
+      case "down":
         next.x = bodyCoord[0].x + 1
         next.y = bodyCoord[0].y
         break;
-      case "down":
-        next.x = bodyCoord[0].x 
-        next.y = bodyCoord[0].y + 1
-        break;
-      // Move left by default
+      // Move down by default
       default:
-        next.x = bodyCoord[0].x - 1
+        next.x = bodyCoord[0].x + 1
         next.y = bodyCoord[0].y
     }
     next.color = snakeHeadColor
@@ -204,8 +200,8 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
           <div 
             key={getKey(coord)} 
             style={{
-              gridColumn: `${coord.x}`,
-              gridRow: `${coord.y}`,
+              gridRow: `${coord.x}`,
+              gridColumn: `${coord.y}`,
               backgroundColor: `${coord.color}`
             }}>
           </div>
@@ -214,8 +210,8 @@ export default function Board({ rows, cols, runState, resetState, callbackFromPa
         <div 
           key="apple"
           style={{
-            gridColumn: `${apple.x}`,
-            gridRow: `${apple.y}`,
+            gridRow: `${apple.x}`,
+            gridColumn: `${apple.y}`,
             backgroundColor: appleColor
           }}>
         </div>
